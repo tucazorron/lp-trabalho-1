@@ -38,7 +38,16 @@ Caso o remédio ainda não exista no estoque, o novo estoque a ser retornado dev
 -}
 
 comprarMedicamento :: Medicamento -> Quantidade -> EstoqueMedicamentos -> EstoqueMedicamentos
-comprarMedicamento = undefined
+comprarMedicamento m q xs =
+  if not .null $ filter (\(x,_) -> x == m) xs
+  then update m q xs
+  else (m,q) : xs
+
+update :: (Eq a, Num b) => a -> b -> [(a,b)] -> [(a,b)]
+update _ _ [] = error "update: element not in assoc list"
+update x y ((x',y'):xs)
+  | x == x' = (x,y + y'):xs
+  | otherwise = (x',y') : update x y xs
 
 
 {-
@@ -52,7 +61,11 @@ onde v é o novo estoque.
 -}
 
 tomarMedicamento :: Medicamento -> EstoqueMedicamentos -> Maybe EstoqueMedicamentos
-tomarMedicamento = undefined
+tomarMedicamento _ [] = Nothing
+tomarMedicamento med (p@(med', qtd):xs)
+  | med == med' && qtd > 0  = Just $ (med', qtd-1) : xs
+  | med == med' && qtd <= 0 = Nothing
+  | otherwise               = (p :) <$> tomarMedicamento med xs
 
 
 {-
@@ -65,7 +78,10 @@ Se o medicamento não existir, retorne 0.
 -}
 
 consultarMedicamento :: Medicamento -> EstoqueMedicamentos -> Quantidade
-consultarMedicamento = undefined
+consultarMedicamento med [] = 0
+consultarMedicamento med (p@(med', qtd):xs)
+  | med == med' = qtd
+  | otherwise = consultarMedicamento med xs
 
 
 {-
@@ -81,8 +97,18 @@ consultarMedicamento = undefined
 
 -}
 
+sort :: Ord a => (t a -> a) -> [t a] -> [t a]
+sort _ [] = []
+sort ext (x:xs) = sort ext ls ++ [x] ++ sort ext rs
+  where ls = filter (\y -> ext y <= ext x) xs
+        rs = filter (\y -> ext y >  ext x) xs
+
+qsort [] = []
+qsort (x:xs) = qsort (filter (<=x) xs) ++ [x] ++ qsort (filter (>x) xs)
+
 demandaMedicamentos :: Receituario -> EstoqueMedicamentos
-demandaMedicamentos = undefined
+demandaMedicamentos = qsort . map (\(med, horarios) -> (med, length horarios))
+
 
 
 {-
@@ -98,11 +124,20 @@ demandaMedicamentos = undefined
 
  -}
 
+isOrdered :: Ord a => [a] -> Bool
+isOrdered [] = True
+isOrdered [x] = True
+isOrdered (x:y:xs) = x < y && isOrdered (y:xs)
+
 receituarioValido :: Receituario -> Bool
-receituarioValido = undefined
+receituarioValido rec = isOrdered names && all isOrdered times
+  where names = map fst rec
+        times = map snd rec
 
 planoValido :: PlanoMedicamento -> Bool
-planoValido = undefined
+planoValido plan = isOrdered times && all isOrdered meds
+  where times = map fst plan
+        meds = map snd plan
 
 
 {-
@@ -120,7 +155,23 @@ planoValido = undefined
  -}
 
 plantaoValido :: Plantao -> Bool
-plantaoValido = undefined
+plantaoValido p = isOrdered times && all isOrdered meds' && valid
+  where times = map fst p
+        cs = map snd p
+        meds = map (filter medicar) cs
+
+        compras = map (filter comprar) cs
+
+        medicar (Medicar _) = True
+        medicar _ = False
+
+        comprar (Comprar _ _) = True
+        comprar _ = False
+
+        meds' = map (map (\(Medicar m) -> m)) meds
+        compras' = map (map (\(Comprar m _) -> m)) compras
+
+        valid = all null $ zipWith L.intersect meds' compras'
 
 
 {-
@@ -135,7 +186,17 @@ plantaoValido = undefined
 -}
 
 geraPlanoReceituario :: Receituario -> PlanoMedicamento
-geraPlanoReceituario = undefined
+geraPlanoReceituario = group . qsort . invert
+
+invert :: [(a, [b])] -> [(b, a)]
+invert = concatMap (\(x, ys) -> map (\y -> (y, x)) ys)
+
+group :: Eq a => [(a, b)] -> [(a, [b])]
+group [] = []
+group (x:xs) = g : group ys
+  where f p = fst x == fst p
+        g = (fst x, snd x : map snd (takeWhile f xs))
+        ys = dropWhile f xs
 
 
 {- QUESTÃO 8  VALOR: 1,0 ponto
@@ -149,7 +210,7 @@ geraPlanoReceituario = undefined
 -}
 
 geraReceituarioPlano :: PlanoMedicamento -> Receituario
-geraReceituarioPlano = undefined
+geraReceituarioPlano = group . qsort . invert
 
 
 {-  QUESTÃO 9 VALOR: 1,0 ponto
@@ -162,7 +223,19 @@ deve ser Just v, onde v é o valor final do estoque de medicamentos
 -}
 
 executaPlantao :: Plantao -> EstoqueMedicamentos -> Maybe EstoqueMedicamentos
-executaPlantao = undefined
+executaPlantao [] e = Just e
+executaPlantao ((h, cs):ps) e = do
+  e' <- go cs e
+  executaPlantao ps e'
+  where go :: [Cuidado] -> EstoqueMedicamentos -> Maybe EstoqueMedicamentos
+        go [] e = Just e
+        go (c:cs) e = do
+        e' <- executaCuidado c e
+        go cs e'
+
+executaCuidado :: Cuidado -> EstoqueMedicamentos -> Maybe EstoqueMedicamentos
+executaCuidado (Comprar med qtd) e = Just $ comprarMedicamento med qtd e
+executaCuidado (Medicar med) e = tomarMedicamento med e
 
 
 {-
@@ -178,7 +251,15 @@ juntamente com ministrar medicamento.
 -}
 
 satisfaz :: Plantao -> PlanoMedicamento -> EstoqueMedicamentos  -> Bool
-satisfaz = undefined
+satisfaz ps plan e = plantaoValido ps && plantao2plano ps == plan && executaPlantao ps e /= Nothing
+
+plantao2plano :: Plantao -> PlanoMedicamento
+plantao2plano [] = []
+plantao2plano p = filter (not . null . snd) $ map f p
+  where f (h, cs) = (h, qsort $ g cs)
+        g [] = []
+        g ((Medicar m):cs) = m : g cs
+        g ((Comprar _ _):cs) = g cs
 
 
 {-
@@ -191,6 +272,29 @@ QUESTÃO 11 (EXTRA) VALOR: 1,0 ponto
 
 -}
 
-plantaoCorreto :: PlanoMedicamento ->  EstoqueMedicamentos  -> Plantao
-plantaoCorreto = undefined
+horarioBase :: PlanoMedicamento -> Horario
+horarioBase ((h,_):_) = h - 1
 
+plantaoCorreto :: PlanoMedicamento ->  EstoqueMedicamentos  -> Plantao
+plantaoCorreto plano e = cuidadoCompras : plano2plantao plano
+  where estoqueNecessario = obterMedicamentos plano
+        dif = diferencaEstoque estoqueNecessario e
+        compras = map (uncurry Comprar) dif
+        cuidadoCompras = (h, compras)
+        h = horarioBase plano
+
+plano2plantao :: PlanoMedicamento -> Plantao
+plano2plantao = map (\(h, ms) -> (h, map Medicar ms))
+
+obterMedicamentos :: PlanoMedicamento -> EstoqueMedicamentos
+obterMedicamentos plano = map (\(m, xs) -> (m, length xs))
+                        . group $ zip (qsort $ concatMap snd plano) (repeat 1)
+
+diferencaEstoque :: EstoqueMedicamentos -> EstoqueMedicamentos -> EstoqueMedicamentos
+diferencaEstoque e1 e2 = filter (\(m, q) -> q /= 0) $ map (`quantidadeNecessaria` e2) e1
+
+quantidadeNecessaria :: (Medicamento, Quantidade) -> EstoqueMedicamentos -> (Medicamento, Quantidade)
+quantidadeNecessaria (m, q) e = let q' = consultarMedicamento m e
+  in if q' < q
+     then (m, q - q')
+     else (m, 0)
