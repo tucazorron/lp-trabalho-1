@@ -1,6 +1,7 @@
 module UnBCare where
 
 import ModeloDados
+import qualified Data.List as L
 
 {-
 
@@ -38,16 +39,16 @@ Caso o remédio ainda não exista no estoque, o novo estoque a ser retornado dev
 -}
 
 comprarMedicamento :: Medicamento -> Quantidade -> EstoqueMedicamentos -> EstoqueMedicamentos
-comprarMedicamento m q xs =
-  if not .null $ filter (\(x,_) -> x == m) xs
-  then update m q xs
-  else (m,q) : xs
+comprarMedicamento med qtd xs =
+  if not .null $ filter (\(x,_) -> x == med) xs
+  then atualizarEstoque med qtd xs
+  else (med,qtd) : xs
 
-update :: (Eq a, Num b) => a -> b -> [(a,b)] -> [(a,b)]
-update _ _ [] = error "update: element not in assoc list"
-update x y ((x',y'):xs)
+atualizarEstoque :: (Eq a, Num b) => a -> b -> [(a,b)] -> [(a,b)]
+atualizarEstoque _ _ [] = error "ERRO: lista vazia"
+atualizarEstoque x y ((x',y'):xs)
   | x == x' = (x,y + y'):xs
-  | otherwise = (x',y') : update x y xs
+  | otherwise = (x',y') : atualizarEstoque x y xs
 
 
 {-
@@ -62,10 +63,10 @@ onde v é o novo estoque.
 
 tomarMedicamento :: Medicamento -> EstoqueMedicamentos -> Maybe EstoqueMedicamentos
 tomarMedicamento _ [] = Nothing
-tomarMedicamento med (p@(med', qtd):xs)
+tomarMedicamento med (all@(med', qtd):xs)
   | med == med' && qtd > 0  = Just $ (med', qtd-1) : xs
   | med == med' && qtd <= 0 = Nothing
-  | otherwise               = (p :) <$> tomarMedicamento med xs
+  | otherwise               = (all :) <$> tomarMedicamento med xs
 
 
 {-
@@ -79,7 +80,7 @@ Se o medicamento não existir, retorne 0.
 
 consultarMedicamento :: Medicamento -> EstoqueMedicamentos -> Quantidade
 consultarMedicamento med [] = 0
-consultarMedicamento med (p@(med', qtd):xs)
+consultarMedicamento med (all@(med', qtd):xs)
   | med == med' = qtd
   | otherwise = consultarMedicamento med xs
 
@@ -97,18 +98,11 @@ consultarMedicamento med (p@(med', qtd):xs)
 
 -}
 
-sort :: Ord a => (t a -> a) -> [t a] -> [t a]
-sort _ [] = []
-sort ext (x:xs) = sort ext ls ++ [x] ++ sort ext rs
-  where ls = filter (\y -> ext y <= ext x) xs
-        rs = filter (\y -> ext y >  ext x) xs
-
-qsort [] = []
-qsort (x:xs) = qsort (filter (<=x) xs) ++ [x] ++ qsort (filter (>x) xs)
+quickSort [] = []
+quickSort (x:xs) = quickSort (filter (<=x) xs) ++ [x] ++ quickSort (filter (>x) xs)
 
 demandaMedicamentos :: Receituario -> EstoqueMedicamentos
-demandaMedicamentos = qsort . map (\(med, horarios) -> (med, length horarios))
-
+demandaMedicamentos = quickSort . map (\(med, horarios) -> (med, length horarios))
 
 
 {-
@@ -124,18 +118,18 @@ demandaMedicamentos = qsort . map (\(med, horarios) -> (med, length horarios))
 
  -}
 
-isOrdered :: Ord a => [a] -> Bool
-isOrdered [] = True
-isOrdered [x] = True
-isOrdered (x:y:xs) = x < y && isOrdered (y:xs)
+verificaOrdenacao :: Ord a => [a] -> Bool
+verificaOrdenacao [] = True
+verificaOrdenacao [x] = True
+verificaOrdenacao (x:y:xs) = x < y && verificaOrdenacao (y:xs)
 
 receituarioValido :: Receituario -> Bool
-receituarioValido rec = isOrdered names && all isOrdered times
+receituarioValido rec = verificaOrdenacao names && all verificaOrdenacao times
   where names = map fst rec
         times = map snd rec
 
 planoValido :: PlanoMedicamento -> Bool
-planoValido plan = isOrdered times && all isOrdered meds
+planoValido plan = verificaOrdenacao times && all verificaOrdenacao meds
   where times = map fst plan
         meds = map snd plan
 
@@ -155,7 +149,7 @@ planoValido plan = isOrdered times && all isOrdered meds
  -}
 
 plantaoValido :: Plantao -> Bool
-plantaoValido p = isOrdered times && all isOrdered meds' && valid
+plantaoValido p = verificaOrdenacao times && all verificaOrdenacao meds' && valid
   where times = map fst p
         cs = map snd p
         meds = map (filter medicar) cs
@@ -186,14 +180,14 @@ plantaoValido p = isOrdered times && all isOrdered meds' && valid
 -}
 
 geraPlanoReceituario :: Receituario -> PlanoMedicamento
-geraPlanoReceituario = group . qsort . invert
+geraPlanoReceituario = agrupaElementos . quickSort . inverteLista
 
-invert :: [(a, [b])] -> [(b, a)]
-invert = concatMap (\(x, ys) -> map (\y -> (y, x)) ys)
+inverteLista :: [(a, [b])] -> [(b, a)]
+inverteLista = concatMap (\(x, ys) -> map (\y -> (y, x)) ys)
 
-group :: Eq a => [(a, b)] -> [(a, [b])]
-group [] = []
-group (x:xs) = g : group ys
+agrupaElementos :: Eq a => [(a, b)] -> [(a, [b])]
+agrupaElementos [] = []
+agrupaElementos (x:xs) = g : agrupaElementos ys
   where f p = fst x == fst p
         g = (fst x, snd x : map snd (takeWhile f xs))
         ys = dropWhile f xs
@@ -210,7 +204,7 @@ group (x:xs) = g : group ys
 -}
 
 geraReceituarioPlano :: PlanoMedicamento -> Receituario
-geraReceituarioPlano = group . qsort . invert
+geraReceituarioPlano = agrupaElementos . quickSort . inverteLista
 
 
 {-  QUESTÃO 9 VALOR: 1,0 ponto
@@ -256,7 +250,7 @@ satisfaz ps plan e = plantaoValido ps && plantao2plano ps == plan && executaPlan
 plantao2plano :: Plantao -> PlanoMedicamento
 plantao2plano [] = []
 plantao2plano p = filter (not . null . snd) $ map f p
-  where f (h, cs) = (h, qsort $ g cs)
+  where f (h, cs) = (h, quickSort $ g cs)
         g [] = []
         g ((Medicar m):cs) = m : g cs
         g ((Comprar _ _):cs) = g cs
@@ -288,7 +282,7 @@ plano2plantao = map (\(h, ms) -> (h, map Medicar ms))
 
 obterMedicamentos :: PlanoMedicamento -> EstoqueMedicamentos
 obterMedicamentos plano = map (\(m, xs) -> (m, length xs))
-                        . group $ zip (qsort $ concatMap snd plano) (repeat 1)
+                        . agrupaElementos $ zip (quickSort $ concatMap snd plano) (repeat 1)
 
 diferencaEstoque :: EstoqueMedicamentos -> EstoqueMedicamentos -> EstoqueMedicamentos
 diferencaEstoque e1 e2 = filter (\(m, q) -> q /= 0) $ map (`quantidadeNecessaria` e2) e1
