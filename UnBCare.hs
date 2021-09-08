@@ -1,9 +1,11 @@
 {-# LANGUAGE TupleSections #-}
+
 module UnBCare where
+
+import Data.Bifunctor (Bifunctor (second))
+import Data.List (intersect, sort)
+import Data.Maybe (isJust)
 import ModeloDados
-import Data.List ( intersect, sort )
-import Data.Bifunctor ( Bifunctor(second) )
-import Data.Maybe ( isJust )
 
 {-
 
@@ -28,7 +30,7 @@ modelo de dados.
 
 {-
 
-   QUESTÃO 1, VALOR: 1,0 ponto
+QUESTÃO 1, VALOR: 1,0 ponto
 
 Defina a função "comprarMedicamento", cujo tipo é dado abaixo e que, a partir de um medicamento, uma quantidade e um
 estoque inicial de medicamentos, retorne um novo estoque de medicamentos contendo o medicamento adicionado da referida
@@ -50,7 +52,8 @@ atualizarEstoque x y ((x', y') : xs)
   | otherwise = (x', y') : atualizarEstoque x y xs
 
 {-
-   QUESTÃO 2, VALOR: 1,0 ponto
+
+QUESTÃO 2, VALOR: 1,0 ponto
 
 Defina a função "tomarMedicamento", cujo tipo é dado abaixo e que, a partir de um medicamento e de um estoque de medicamentos,
 retorna um novo estoque de medicamentos, resultante de 1 comprimido do medicamento ser ministrado ao paciente.
@@ -67,7 +70,8 @@ tomarMedicamento med (all@(med', qtd) : xs)
   | otherwise = (all :) <$> tomarMedicamento med xs
 
 {-
-   QUESTÃO 3  VALOR: 1,0 ponto
+
+QUESTÃO 3  VALOR: 1,0 ponto
 
 Defina a função "consultarMedicamento", cujo tipo é dado abaixo e que, a partir de um medicamento e de um estoque de
 medicamentos, retorne a quantidade desse medicamento no estoque.
@@ -77,20 +81,21 @@ Se o medicamento não existir, retorne 0.
 
 consultarMedicamento :: Medicamento -> EstoqueMedicamentos -> Quantidade
 consultarMedicamento med [] = 0
-consultarMedicamento med (all@(med', qtd):xs)
+consultarMedicamento med (all@(med', qtd) : xs)
   | med == med' = qtd
   | otherwise = consultarMedicamento med xs
 
 {-
-   QUESTÃO 4  VALOR: 1,0 ponto
 
-  Defina a função "demandaMedicamentos", cujo tipo é dado abaixo e que computa a demanda de todos os medicamentos
-  por um dia a partir do receituario. O retorno é do tipo EstoqueMedicamentos e deve ser ordenado lexicograficamente
-  pelo nome do medicamento.
+QUESTÃO 4  VALOR: 1,0 ponto
 
-  Dica: Observe que o receituario lista cada remédio e os horários em que ele deve ser tomado no dia.
-  Assim, a demanda de cada remédio já está latente no receituario, bastando contar a quantidade de vezes que cada remédio
-  é tomado.
+Defina a função "demandaMedicamentos", cujo tipo é dado abaixo e que computa a demanda de todos os medicamentos
+por um dia a partir do receituario. O retorno é do tipo EstoqueMedicamentos e deve ser ordenado lexicograficamente
+pelo nome do medicamento.
+
+Dica: Observe que o receituario lista cada remédio e os horários em que ele deve ser tomado no dia.
+Assim, a demanda de cada remédio já está latente no receituario, bastando contar a quantidade de vezes que cada remédio
+é tomado.
 
 -}
 
@@ -102,25 +107,23 @@ demandaMedicamentos :: Receituario -> EstoqueMedicamentos
 demandaMedicamentos = quickSort . map (Data.Bifunctor.second length)
 
 {-
-   QUESTÃO 5  VALOR: 1,0 ponto, sendo 0,5 para cada função.
 
- Um receituário é válido se, e somente se, todo os medicamentos são distintos e estão ordenados lexicograficamente e,
- para cada medicamento, seus horários também estão ordenados e são distintos.
+QUESTÃO 5  VALOR: 1,0 ponto, sendo 0,5 para cada função.
 
- Inversamente, um plano de medicamentos é válido se, e somente se, todos seus horários também estão ordenados e são distintos,
- e para cada horário, os medicamentos são distintos e são ordenados lexicograficamente.
+Um receituário é válido se, e somente se, todo os medicamentos são distintos e estão ordenados lexicograficamente e,
+para cada medicamento, seus horários também estão ordenados e são distintos.
 
- Defina as funções "receituarioValido" e "planoValido" que verifiquem as propriedades acima e cujos tipos são dados abaixo:
+Inversamente, um plano de medicamentos é válido se, e somente se, todos seus horários também estão ordenados e são distintos,
+e para cada horário, os medicamentos são distintos e são ordenados lexicograficamente.
 
- -}
+Defina as funções "receituarioValido" e "planoValido" que verifiquem as propriedades acima e cujos tipos são dados abaixo:
+
+-}
 
 verificaOrdenacao :: Ord a => [a] -> Bool
 verificaOrdenacao [] = True
 verificaOrdenacao [x] = True
 verificaOrdenacao (x : y : xs) = x < y && verificaOrdenacao (y : xs)
-
--- verificaOrdenacao :: Eq t => t -> Bool
--- verificaOrdenacao xs = xs == sort xs
 
 receituarioValido :: Receituario -> Bool
 receituarioValido rec = verificaOrdenacao names && all verificaOrdenacao times
@@ -136,17 +139,17 @@ planoValido plan = verificaOrdenacao times && all verificaOrdenacao meds
 
 {-
 
-   QUESTÃO 6  VALOR: 1,0 ponto,
+QUESTÃO 6  VALOR: 1,0 ponto,
 
- Um plantão é válido se, e somente se, todas as seguintes condições são satisfeitas:
+Um plantão é válido se, e somente se, todas as seguintes condições são satisfeitas:
 
- 1. Os horários da lista são distintos e estão em ordem crescente;
- 2. Não há, em um mesmo horário, ocorrência de compra e medicagem de um mesmo medicamento (e.g. `[Comprar m1, Medicar m1 x]`);
- 3. Para cada horário, as ocorrências de Medicar estão ordenadas lexicograficamente.
+1. Os horários da lista são distintos e estão em ordem crescente;
+2. Não há, em um mesmo horário, ocorrência de compra e medicagem de um mesmo medicamento (e.g. `[Comprar m1, Medicar m1 x]`);
+3. Para cada horário, as ocorrências de Medicar estão ordenadas lexicograficamente.
 
- Defina a função "plantaoValido" que verifica as propriedades acima e cujo tipo é dado abaixo:
+Defina a função "plantaoValido" que verifica as propriedades acima e cujo tipo é dado abaixo:
 
- -}
+-}
 
 plantaoValido :: Plantao -> Bool
 plantaoValido p = verificaOrdenacao times && all verificaOrdenacao meds' && valid
@@ -169,13 +172,14 @@ plantaoValido p = verificaOrdenacao times && all verificaOrdenacao meds' && vali
     valid = all null $ zipWith Data.List.intersect meds' compras'
 
 {-
-   QUESTÃO 7  VALOR: 1,0 ponto
 
-  Defina a função "geraPlanoReceituario", cujo tipo é dado abaixo e que, a partir de um receituario válido,
-  retorne um plano de medicamento válido.
+QUESTÃO 7  VALOR: 1,0 ponto
 
-  Dica: enquanto o receituário lista os horários que cada remédio deve ser tomado, o plano de medicamentos  é uma
-  disposição ordenada por horário de todos os remédios que devem ser tomados pelo paciente em um certo horário.
+Defina a função "geraPlanoReceituario", cujo tipo é dado abaixo e que, a partir de um receituario válido,
+retorne um plano de medicamento válido.
+
+Dica: enquanto o receituário lista os horários que cada remédio deve ser tomado, o plano de medicamentos  é uma
+disposição ordenada por horário de todos os remédios que devem ser tomados pelo paciente em um certo horário.
 
 -}
 
@@ -183,7 +187,7 @@ geraPlanoReceituario :: Receituario -> PlanoMedicamento
 geraPlanoReceituario = agrupaElementos . quickSort . inverteLista
 
 inverteLista :: [(a, [b])] -> [(b, a)]
-inverteLista = concatMap (\(x, ys) -> map (, x) ys)
+inverteLista = concatMap (\(x, ys) -> map (,x) ys)
 
 agrupaElementos :: Eq a => [(a, b)] -> [(a, [b])]
 agrupaElementos [] = []
@@ -193,20 +197,24 @@ agrupaElementos (x : xs) = g : agrupaElementos ys
     g = (fst x, snd x : map snd (takeWhile f xs))
     ys = dropWhile f xs
 
-{- QUESTÃO 8  VALOR: 1,0 ponto
+{-
 
- Defina a função "geraReceituarioPlano", cujo tipo é dado abaixo e que retorna um receituário válido a partir de um
- plano de medicamentos válido.
- Dica: Existe alguma relação de simetria entre o receituário e o plano de medicamentos? Caso exista, essa simetria permite
- compararmos a função geraReceituarioPlano com a função geraPlanoReceituario ? Em outras palavras, podemos definir
- geraReceituarioPlano com base em geraPlanoReceituario ?
+QUESTÃO 8  VALOR: 1,0 ponto
+
+Defina a função "geraReceituarioPlano", cujo tipo é dado abaixo e que retorna um receituário válido a partir de um
+plano de medicamentos válido.
+Dica: Existe alguma relação de simetria entre o receituário e o plano de medicamentos? Caso exista, essa simetria permite
+compararmos a função geraReceituarioPlano com a função geraPlanoReceituario ? Em outras palavras, podemos definir
+geraReceituarioPlano com base em geraPlanoReceituario ?
 
 -}
 
 geraReceituarioPlano :: PlanoMedicamento -> Receituario
 geraReceituarioPlano = agrupaElementos . quickSort . inverteLista
 
-{-  QUESTÃO 9 VALOR: 1,0 ponto
+{-
+
+QUESTÃO 9 VALOR: 1,0 ponto
 
 Defina a função "executaPlantao", cujo tipo é dado abaixo e que executa um plantão válido a partir de um estoque de medicamentos,
 resultando em novo estoque. A execução consiste em desempenhar, sequencialmente, todos os cuidados para cada horário do plantão.
@@ -232,6 +240,7 @@ executaCuidado (Comprar med qtd) e = Just $ comprarMedicamento med qtd e
 executaCuidado (Medicar med) e = tomarMedicamento med e
 
 {-
+
 QUESTÃO 10 VALOR: 1,0 ponto
 
 Defina uma função "satisfaz", cujo tipo é dado abaixo e que verifica se um plantão válido satisfaz um plano
@@ -259,9 +268,9 @@ plantao2plano p = filter (not . null . snd) $ map f p
 
 QUESTÃO 11 (EXTRA) VALOR: 1,0 ponto
 
- Defina a função "plantaoCorreto", cujo tipo é dado abaixo e que gera um plantão válido que satisfaz um plano de
- medicamentos válido e um estoque de medicamentos.
- Dica: a execução do plantão deve atender ao plano de medicamentos e ao estoque.
+Defina a função "plantaoCorreto", cujo tipo é dado abaixo e que gera um plantão válido que satisfaz um plano de
+medicamentos válido e um estoque de medicamentos.
+Dica: a execução do plantão deve atender ao plano de medicamentos e ao estoque.
 
 -}
 
