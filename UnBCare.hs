@@ -275,6 +275,7 @@ Dica: a execução do plantão deve atender ao plano de medicamentos e ao estoqu
 -}
 
 horarioBase :: PlanoMedicamento -> Horario
+horarioBase [] = 0
 horarioBase ((h, _) : _) = h - 1
 
 plantaoCorreto :: PlanoMedicamento -> EstoqueMedicamentos -> Plantao
