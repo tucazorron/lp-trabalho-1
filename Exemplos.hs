@@ -1,9 +1,25 @@
 module Exemplos where
 
 import ModeloDados
+  ( Cuidado (Comprar, Medicar),
+    EstoqueMedicamentos,
+    Medicamento,
+    PlanoMedicamento,
+    Plantao,
+    Receituario,
+  )
 import UnBCare
-
--- Declarações
+  ( comprarMedicamento,
+    consultarMedicamento,
+    demandaMedicamentos,
+    executaPlantao,
+    geraPlanoReceituario,
+    geraReceituarioPlano,
+    plantaoCorreto,
+    plantaoValido,
+    satisfaz,
+    tomarMedicamento,
+  )
 
 m1 :: Medicamento
 m1 = "Lactulona"
@@ -110,76 +126,112 @@ plantaoInvalido4 =
     (23, [Medicar m4])
   ]
 
--- testando comprarMedicamento
-casoTeste1 = comprarMedicamento m3 30 estoque1 == [(m1, 10), (m2, 5), (m3, 30)]
+casoTeste1_1 :: Bool
+casoTeste1_1 = comprarMedicamento m3 30 estoque1 == [(m1, 10), (m2, 5), (m3, 30)]
 
-casoTeste2 = comprarMedicamento m6 20 estoque1 == [(m6, 20), (m1, 10), (m2, 5), (m3, 0)]
+casoTeste1_2 :: Bool
+casoTeste1_2 = comprarMedicamento m6 20 estoque1 == [(m6, 20), (m1, 10), (m2, 5), (m3, 0)]
 
-casoTeste3 = comprarMedicamento m2 2 estoque1 == [(m1, 10), (m2, 7), (m3, 0)]
+casoTeste1_3 :: Bool
+casoTeste1_3 = comprarMedicamento m2 2 estoque1 == [(m1, 10), (m2, 7), (m3, 0)]
 
-casoTeste4 = comprarMedicamento m8 20 [] == [(m8, 20)]
+casoTeste1_4 :: Bool
+casoTeste1_4 = comprarMedicamento m8 20 [] == [(m8, 20)]
 
-conjuntoCasosTeste1 = and [casoTeste1, casoTeste2, casoTeste3, casoTeste4]
+conjuntoCasosTeste1 :: Bool
+conjuntoCasosTeste1 = and [casoTeste1_1, casoTeste1_2, casoTeste1_3, casoTeste1_4]
 
---testando tomarMedicamento
-casoTeste5 = tomarMedicamento m1 estoque1 == Just [(m1, 9), (m2, 5), (m3, 0)]
+casoTeste2_1 :: Bool
+casoTeste2_1 = tomarMedicamento m1 estoque1 == Just [(m1, 9), (m2, 5), (m3, 0)]
 
-casoTeste6 = tomarMedicamento m3 estoque1 == Nothing
+casoTeste2_2 :: t
+casoTeste2_2 = isNothing1 (tomarMedicamento m3 estoque1)
 
-conjuntoCasosTeste2 = and [casoTeste5, casoTeste6]
+isNothing1 :: Maybe EstoqueMedicamentos -> t
+isNothing1 = error "not implemented"
 
---testando consultarMedicamento
-casoTeste7 = consultarMedicamento m2 estoque1 == 5
+conjuntoCasosTeste2 :: Bool
+conjuntoCasosTeste2 = casoTeste2_1 && casoTeste2_2
 
-casoTeste8 = consultarMedicamento "Aas" estoque1 == 0
+casoTeste3_1 :: Bool
+casoTeste3_1 = consultarMedicamento m2 estoque1 == 5
 
-conjuntoCasosTeste3 = and [casoTeste5, casoTeste6]
+casoTeste3_2 :: Bool
+casoTeste3_2 = consultarMedicamento "Aas" estoque1 == 0
 
--- testando demandaMedicamentos
-casoTeste9 = demandaMedicamentos receituario1 == [(m1, 2), (m2, 1), (m3, 1)]
+conjuntoCasosTeste3 :: Bool
+conjuntoCasosTeste3 = casoTeste3_1 && casoTeste3_2
 
-conjuntoCasosTeste4 = and [casoTeste9]
+casoTeste4_1 :: Bool
+casoTeste4_1 = demandaMedicamentos receituario1 == [(m1, 2), (m2, 1), (m3, 1)]
 
---testando geraPlanoReceituario
-casoTeste10 = geraPlanoReceituario receituario1 == [(6, [m2]), (8, [m1]), (17, [m1]), (22, [m3])]
+conjuntoCasosTeste4 :: Bool
+conjuntoCasosTeste4 = casoTeste4_1
 
-casoTeste11 = geraPlanoReceituario receituario2 == [(6, [m2]), (8, [m1, m4]), (17, [m1]), (22, [m3, m4]), (23, [m4])]
+casoTeste5_1 :: Bool
+casoTeste5_1 = geraPlanoReceituario receituario1 == [(6, [m2]), (8, [m1]), (17, [m1]), (22, [m3])]
 
-conjuntoCasosTeste5 = and [casoTeste10, casoTeste11]
+casoTeste5_2 :: Bool
+casoTeste5_2 = geraPlanoReceituario receituario2 == [(6, [m2]), (8, [m1, m4]), (17, [m1]), (22, [m3, m4]), (23, [m4])]
 
--- testando geradores de plano e receituário
-casoTeste12 = geraReceituarioPlano (geraPlanoReceituario receituario1) == receituario1
+conjuntoCasosTeste5 :: Bool
+conjuntoCasosTeste5 = casoTeste5_1 && casoTeste5_2
 
-casoTeste13 = geraReceituarioPlano (geraPlanoReceituario receituario2) == receituario2
+casoTeste6_1 :: Bool
+casoTeste6_1 = geraReceituarioPlano (geraPlanoReceituario receituario1) == receituario1
 
-conjuntoCasosTeste6 = and [casoTeste12, casoTeste13]
+casoTeste6_2 :: Bool
+casoTeste6_2 = geraReceituarioPlano (geraPlanoReceituario receituario2) == receituario2
 
--- testando executaPlantao
-casoTeste14 = executaPlantao plantao1 estoque1 == Nothing
+conjuntoCasosTeste6 :: Bool
+conjuntoCasosTeste6 = casoTeste6_1 && casoTeste6_2
 
-casoTeste15 = executaPlantao plantao1 estoque2 == Just [(m1, 8), (m2, 4), (m3, 9)]
+casoTeste7_1 :: Bool
+casoTeste7_1 = isNothing2 (executaPlantao plantao1 estoque1)
 
-casoTeste16 = executaPlantao plantao2 estoque1 == Just [(m1, 8), (m2, 4), (m3, 29)]
+isNothing2 :: Maybe EstoqueMedicamentos -> Bool
+isNothing2 = error "not implemented"
 
-conjuntoCasosTeste7 = and [casoTeste14, casoTeste15, casoTeste16]
+casoTeste7_2 :: Bool
+casoTeste7_2 = executaPlantao plantao1 estoque2 == Just [(m1, 8), (m2, 4), (m3, 9)]
 
--- testando satisfaz
-casoTeste17 = not (satisfaz plantao1 plano1 estoque1)
+casoTeste7_3 :: Bool
+casoTeste7_3 = executaPlantao plantao2 estoque1 == Just [(m1, 8), (m2, 4), (m3, 29)]
 
-casoTeste18 = satisfaz plantao1 plano1 estoque2
+conjuntoCasosTeste7 :: Bool
+conjuntoCasosTeste7 = casoTeste7_1 && casoTeste7_2 && casoTeste7_3
 
-casoTeste19 = satisfaz plantao2 plano1 estoque1
+casoTeste8_1 :: Bool
+casoTeste8_1 = not (satisfaz plantao1 plano1 estoque1)
 
-conjuntoCasosTeste8 = and [casoTeste17, casoTeste18, casoTeste19]
+casoTeste8_2 :: Bool
+casoTeste8_2 = satisfaz plantao1 plano1 estoque2
 
--- testando plantaoCorreto
-casoTeste21 = satisfaz plantao plano1 estoque1
+casoTeste8_3 :: Bool
+casoTeste8_3 = satisfaz plantao2 plano1 estoque1
+
+conjuntoCasosTeste8 :: Bool
+conjuntoCasosTeste8 = casoTeste8_1 && casoTeste8_2 && casoTeste8_3
+
+casoTeste9_1 :: Bool
+casoTeste9_1 = satisfaz plantao plano1 estoque1
   where
     plantao = plantaoCorreto plano1 estoque1
 
-conjuntoCasosTeste9 = and [casoTeste21]
+conjuntoCasosTeste9 :: Bool
+conjuntoCasosTeste9 = casoTeste9_1
 
--- resultado global dos testes
+conjuntoCasosTestePlantaoValido =
+  and
+    [ plantaoValido plantao1,
+      plantaoValido plantao2,
+      plantaoValido plantaoValido0,
+      not (plantaoValido plantaoInvalido1),
+      not (plantaoValido plantaoInvalido2),
+      not (plantaoValido plantaoInvalido3)
+    ]
+
+resultadoGlobalTestes :: Bool
 resultadoGlobalTestes =
   and
     [ conjuntoCasosTeste1,
@@ -192,15 +244,4 @@ resultadoGlobalTestes =
       conjuntoCasosTeste8,
       conjuntoCasosTeste9,
       conjuntoCasosTestePlantaoValido
-    ]
-
--- testando plantaoValido
-conjuntoCasosTestePlantaoValido =
-  and
-    [ plantaoValido plantao1 == True,
-      plantaoValido plantao2 == True,
-      plantaoValido plantaoValido0 == True,
-      plantaoValido plantaoInvalido1 == False,
-      plantaoValido plantaoInvalido2 == False,
-      plantaoValido plantaoInvalido3 == False
     ]
